@@ -1,279 +1,316 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Календарь</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
-        
-        body {
-            background: #1a1a2e;
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
-        .container {
-            text-align: center;
-            max-width: 350px;
-        }
-        
-        .btn {
-            background: #0088cc;
-            color: white;
-            border: none;
-            padding: 25px 30px;
-            font-size: 20px;
-            border-radius: 15px;
-            cursor: pointer;
-            margin: 20px 0;
-            width: 100%;
-            transition: all 0.3s;
-        }
-        
-        .btn:hover {
-            background: #0066aa;
-            transform: translateY(-2px);
-        }
-        
-        .instructions {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-            text-align: left;
-        }
-        
-        .step {
-            margin: 10px 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        
-        .step-number {
-            background: #0088cc;
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Редактор нескольких рецептов → JSON массив</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 30px 20px 100px;
+      color: #222;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: #c2410c;
+      margin-bottom: 40px;
+      font-size: 2.2rem;
+    }
+    .recipe-block {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 32px;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .recipe-block h2 {
+      margin: 0 0 20px;
+      color: #9a3412;
+      font-size: 1.4rem;
+    }
+    .remove-btn {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .remove-btn:hover {
+      background: #dc2626;
+    }
+    .form-grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 180px 1fr;
+      align-items: start;
+    }
+    .form-grid label {
+      font-weight: 600;
+      color: #444;
+      padding-top: 10px;
+      text-align: right;
+    }
+    input, textarea {
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      background: white;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    textarea {
+      font-family: 'Consolas', 'Courier New', monospace;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 140px;
+    }
+    .section-title {
+      grid-column: 1 / -1;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #444;
+      margin: 20px 0 8px;
+    }
+    .add-recipe-btn {
+      display: block;
+      margin: 0 auto 40px;
+      padding: 16px 48px;
+      font-size: 1.15rem;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .add-recipe-btn:hover {
+      background: #059669;
+    }
+    #json-output {
+      width: 100%;
+      height: 560px;
+      margin-top: 40px;
+      padding: 24px;
+      background: #1f2937;
+      color: #e5e7eb;
+      font-family: 'Consolas', monospace;
+      border-radius: 10px;
+      white-space: pre;
+      overflow: auto;
+      border: 1px solid #374151;
+      font-size: 0.97rem;
+      line-height: 1.45;
+    }
+    .actions {
+      text-align: center;
+      margin: 48px 0;
+    }
+    button.main-btn {
+      padding: 16px 56px;
+      font-size: 1.18rem;
+      background: #f97316;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.main-btn:hover {
+      background: #ea580c;
+    }
+    small {
+      color: #6b7280;
+      font-size: 0.92rem;
+      display: block;
+      margin-top: 6px;
+    }
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .form-grid label {
+        text-align: left;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📅</h1>
-        <button class="btn" onclick="openCalendar()">Открыть календарь</button>
-        
-        <div class="instructions">
-            <div class="step">
-                <div class="step-number">1</div>
-                <div>Нажмите кнопку выше</div>
-            </div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <div>Откроется приложение "Календарь"</div>
-            </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <div>Создайте событие на нужную дату</div>
-            </div>
-            <div class="step">
-                <div class="step-number">4</div>
-                <div>Название: <strong>"Как результат?"</strong></div>
-            </div>
-        </div>
+
+<div class="container">
+  <h1>Редактор нескольких рецептов</h1>
+
+  <div id="recipes-container">
+    <!-- сюда будут добавляться блоки рецептов -->
+  </div>
+
+  <button class="add-recipe-btn" onclick="addRecipeBlock()">+ Добавить ещё один рецепт</button>
+
+  <div class="actions">
+    <button class="main-btn" onclick="generateAllJson()">Сформировать JSON-массив</button>
+  </div>
+
+  <pre id="json-output">[]</pre>
+</div>
+
+<script>
+// Глобальный счётчик для уникальных id блоков
+let recipeCounter = 0;
+
+function addRecipeBlock(initialData = {}) {
+  recipeCounter++;
+  const id = `recipe-${recipeCounter}`;
+
+  const block = document.createElement('div');
+  block.className = 'recipe-block';
+  block.id = id;
+  block.innerHTML = `
+    <h2>Рецепт ${recipeCounter}</h2>
+    <button class="remove-btn" onclick="removeRecipeBlock('${id}')">Удалить рецепт</button>
+
+    <div class="form-grid">
+
+      <label for="${id}-title">Название:</label>
+      <div>
+        <input type="text" id="${id}-title" value="${initialData.title || ''}" placeholder="Например: Картошка с курицей в духовке" oninput="generateAllJson()">
+        <small>От названия будет имя файла фото (.webp)</small>
+      </div>
+
+      <label for="${id}-photo">Фото:</label>
+      <input type="text" id="${id}-photo" value="${initialData.photo || ''}" placeholder="автоматически имя-рецепта.webp" oninput="generateAllJson()">
+
+      <label for="${id}-time">Время:</label>
+      <input type="text" id="${id}-time" value="${initialData.time || ''}" placeholder="например: 75 минут" oninput="generateAllJson()">
+
+      <label for="${id}-calories">Калории:</label>
+      <input type="number" id="${id}-calories" value="${initialData.calories || ''}" placeholder="на 100 г / на порцию" oninput="generateAllJson()">
+
+      <div class="section-title">Ингредиенты</div>
+      <div style="grid-column: 1 / -1;">
+        <textarea id="${id}-ingredients" rows="12" placeholder="по одному на строку" oninput="generateAllJson()">${(initialData.ingredients || []).join('\n')}</textarea>
+        <small>Скобки отрежутся, количество → длинное тире автоматически</small>
+      </div>
+
+      <div class="section-title">Шаги приготовления</div>
+      <div style="grid-column: 1 / -1;">
+        <textarea id="${id}-steps" rows="14" placeholder="по одному шагу на строку" oninput="generateAllJson()">${(initialData.steps || []).map(s => s.replace(/^\d+\.\s*/, '')).join('\n')}</textarea>
+        <small>Шаги будут пронумерованы в JSON автоматически</small>
+      </div>
+
     </div>
+  `;
 
-    <script>
-        function openCalendar() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            
-            if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
-                openIOSCalendar();
-            } else if (userAgent.includes('android')) {
-                openAndroidCalendar();
-            } else {
-                openDesktopCalendar();
-            }
-        }
+  document.getElementById('recipes-container').appendChild(block);
+  generateAllJson();
+}
 
-        function openIOSCalendar() {
-            const confirmed = confirm(
-                '📱 Открыть приложение "Календарь" на iPhone?\n\n' +
-                'Нажмите "Открыть" чтобы перейти в календарь'
-            );
-            
-            if (confirmed) {
-                // Схемы для iOS Calendar
-                const iosSchemes = [
-                    'calshow://',
-                    'x-apple-calevent://',
-                    'calendar://'
-                ];
-                
-                let opened = false;
-                iosSchemes.forEach(scheme => {
-                    if (!opened) {
-                        window.location.href = scheme;
-                        opened = true;
-                    }
-                });
-                
-                setTimeout(() => {
-                    showCalendarInstructions('iPhone');
-                }, 1000);
-            }
-        }
+function removeRecipeBlock(blockId) {
+  const block = document.getElementById(blockId);
+  if (block) {
+    block.remove();
+    generateAllJson();
+  }
+}
 
-        function openAndroidCalendar() {
-            const confirmed = confirm(
-                '📱 Открыть приложение "Календарь" на Android?\n\n' +
-                'Нажмите "Открыть" чтобы перейти в календарь'
-            );
-            
-            if (confirmed) {
-                // Схемы для Android Calendar
-                const androidSchemes = [
-                    'content://com.android.calendar/time/',
-                    'com.google.android.calendar://',
-                    'com.android.calendar://',
-                    'com.samsung.android.calendar://',
-                    'com.huawei.calendar://'
-                ];
-                
-                let opened = false;
-                androidSchemes.forEach(scheme => {
-                    if (!opened) {
-                        window.location.href = scheme;
-                        opened = true;
-                    }
-                });
-                
-                setTimeout(() => {
-                    showCalendarInstructions('Android');
-                }, 1000);
-            }
-        }
+function cleanIngredient(line) {
+  let s = line.trim();
+  if (!s) return '';
 
-        function openDesktopCalendar() {
-            const confirmed = confirm(
-                '💻 Открыть приложение "Календарь"?\n\n' +
-                'Нажмите "Открыть" чтобы перейти в календарь'
-            );
-            
-            if (confirmed) {
-                // Для Windows
-                if (navigator.userAgent.includes('Windows')) {
-                    window.location.href = 'outlookcal://';
-                }
-                // Для Mac
-                else if (navigator.userAgent.includes('Mac')) {
-                    window.location.href = 'webcal://';
-                }
-                
-                setTimeout(() => {
-                    showCalendarInstructions('компьютера');
-                }, 1000);
-            }
-        }
+  s = s.replace(/\s*\([^)]*\)\s*$/, '').trim();
 
-        function showCalendarInstructions(deviceType) {
-            alert(
-                `📅 Инструкция для ${deviceType}:\n\n` +
-                '1. ✏️ Нажмите "Создать событие" или "+"\n' +
-                '2. 📝 Название: "Как результат?"\n' +
-                '3. 📅 Выберите дату через 5 дней\n' +
-                '4. ⏰ Установите время напоминания\n' +
-                '5. ✅ Сохраните событие\n\n' +
-                '🔔 Напоминание придет в указанную дату!'
-            );
-            
-            // Обновляем инструкции на странице
-            document.querySelector('.instructions').innerHTML = `
-                <div style="text-align: center; margin-bottom: 15px;">
-                    <strong>✅ Инструкция получена!</strong>
-                </div>
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <div>Нажмите <strong>"Создать событие"</strong></div>
-                </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <div>Название: <strong>"Как результат?"</strong></div>
-                </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <div>Дата: <strong>через 5 дней</strong></div>
-                </div>
-                <div class="step">
-                    <div class="step-number">4</div>
-                    <div>Установите <strong>напоминание</strong></div>
-                </div>
-                <div class="step">
-                    <div class="step-number">5</div>
-                    <div>Нажмите <strong>"Сохранить"</strong></div>
-                </div>
-            `;
-        }
+  const match = s.match(/^(.*?)\s*([0-9½⅓⅔¼¾ ,./-]+\s*[гмлкгч.лст.ч.лшт.банокупаковштукгран кусочков]*)$/i);
 
-        // Альтернатива: открытие нативного выбора даты
-        function openNativeDatePicker() {
-            const input = document.createElement('input');
-            input.type = 'date';
-            input.style.position = 'fixed';
-            input.style.top = '-100px';
-            document.body.appendChild(input);
-            
-            input.click();
-            
-            input.addEventListener('change', function() {
-                const selectedDate = new Date(this.value);
-                alert(`Вы выбрали дату: ${selectedDate.toLocaleDateString('ru-RU')}\n\nСоздайте событие в календаре с названием "Как результат?"`);
-                document.body.removeChild(input);
-            });
-            
-            setTimeout(() => {
-                if (document.body.contains(input)) {
-                    document.body.removeChild(input);
-                }
-            }, 10000);
-        }
+  if (match && match[1] && match[2]) {
+    let name = match[1].trim();
+    let qty  = match[2].trim().replace(/\.$/, '');
+    return `${name} — ${qty}`;
+  }
 
-        // Добавляем альтернативную кнопку
-        function addAlternativeButton() {
-            const altBtn = document.createElement('button');
-            altBtn.className = 'btn';
-            altBtn.style.background = '#28a745';
-            altBtn.style.marginTop = '10px';
-            altBtn.textContent = 'Выбрать дату';
-            altBtn.onclick = openNativeDatePicker;
-            
-            document.querySelector('.btn').parentNode.insertBefore(altBtn, document.querySelector('.btn').nextSibling);
-            
-            // Обновляем инструкции
-            document.querySelector('.instructions').innerHTML += `
-                <div style="margin-top: 15px; text-align: center; color: #ccc;">
-                    или используйте кнопку "Выбрать дату"
-                </div>
-            `;
-        }
+  return s;
+}
 
-        // Инициализация
-        addAlternativeButton();
-    </script>
+function autoPhoto(title, manualPhoto) {
+  let photo = manualPhoto.trim();
+
+  if (!photo && title) {
+    photo = title
+      .toLowerCase()
+      .replace(/[^a-zа-яё0-9\s-]/gi, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    if (photo) photo += '.webp';
+  } else if (photo && !photo.toLowerCase().endsWith('.webp')) {
+    if (!/\.[a-z]{3,4}$/i.test(photo)) {
+      photo += '.webp';
+    }
+  }
+
+  return photo;
+}
+
+function generateAllJson() {
+  const recipes = [];
+
+  document.querySelectorAll('.recipe-block').forEach(block => {
+    const id = block.id;
+
+    const title    = (document.getElementById(`${id}-title`)?.value || '').trim();
+    const photoRaw = (document.getElementById(`${id}-photo`)?.value || '').trim();
+    const photo    = autoPhoto(title, photoRaw);
+    const time     = (document.getElementById(`${id}-time`)?.value || '').trim();
+    const calories = Number(document.getElementById(`${id}-calories`)?.value) || 0;
+
+    // Ингредиенты
+    const ingText = (document.getElementById(`${id}-ingredients`)?.value || '');
+    const ingredients = ingText
+      .split('\n')
+      .map(cleanIngredient)
+      .filter(Boolean);
+
+    // Шаги с нумерацией
+    const stepsText = (document.getElementById(`${id}-steps`)?.value || '').trim();
+    const rawSteps = stepsText
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+    const steps = rawSteps.map((step, i) => `${i + 1}. ${step}`);
+
+    if (title || ingredients.length > 0 || steps.length > 0) {
+      recipes.push({
+        title,
+        photo,
+        ingredients,
+        steps,
+        time,
+        calories
+      });
+    }
+  });
+
+  const jsonStr = JSON.stringify(recipes, null, 2);
+  document.getElementById('json-output').textContent = jsonStr || '[]';
+}
+
+// Создаём первый пустой рецепт при загрузке
+window.onload = () => {
+  addRecipeBlock();
+};
+</script>
+
 </body>
 </html>
