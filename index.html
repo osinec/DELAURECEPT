@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Генератор рецептов — уютно и красиво</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -136,7 +136,8 @@
       align-items: center;
     }
 
-    .ingredient-row { grid-template-columns: 2fr 1fr 100px 44px; }
+    /* 🔥 ИЗМЕНЕНО: добавлен столбец для importance */
+    .ingredient-row { grid-template-columns: 2fr 1fr 100px 140px 44px; }
     .step-row       { grid-template-columns: 1fr 44px; }
 
     .add-btn {
@@ -209,6 +210,16 @@
       padding: 60px 20px;
       font-size: 1.1rem;
     }
+
+    /* Легенда важности */
+    .importance-legend {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin: 16px 0;
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
   </style>
 </head>
 <body>
@@ -217,6 +228,13 @@
   <header>
     <h1>Мои рецепты</h1>
     <p class="subtitle">Уютный генератор JSON для твоих любимых блюд 🍳✨</p>
+    
+    <!-- 🔥 Легенда важности ингредиентов -->
+    <div class="importance-legend">
+      <span>✅ Обязательный</span>
+      <span>⭐ Желательный</span>
+      <span>➖ Необязательный</span>
+    </div>
   </header>
 
   <div id="recipes-container"></div>
@@ -321,6 +339,7 @@ function removeRecipe(blockId) {
   if (block) block.remove();
 }
 
+// 🔥 ИЗМЕНЕНА: добавлен select для importance
 function addIngredient(blockId) {
   const container = document.querySelector(`#${blockId} .ingredients-rows`);
   if (!container) return;
@@ -337,6 +356,12 @@ function addIngredient(blockId) {
       <option value="ст.л.">ст.л.</option>
       <option value="по вкусу">по вкусу</option>
       <option value="">—</option>
+    </select>
+    <!-- 🔥 НОВОЕ: выбор важности -->
+    <select class="ing-importance">
+      <option value="2">✅ Обязательный</option>
+      <option value="1">⭐ Желательный</option>
+      <option value="0">➖ Необязательный</option>
     </select>
     <button type="button" onclick="this.parentElement.remove()" style="background:#f0d0c8; color:#a94442; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600;">×</button>
   `;
@@ -371,16 +396,19 @@ function generateJSON() {
 
     const recipe = { id, title, photo, servings, time, calories, ingredients: [], steps: [] };
 
+    // 🔥 ИЗМЕНЕНО: читаем importance и добавляем в JSON
     block.querySelectorAll(".ingredient-row").forEach(row => {
       const name = row.querySelector(".ing-name")?.value?.trim();
       const qty  = row.querySelector(".ing-qty")?.value?.trim();
       const unit = row.querySelector(".ing-unit")?.value?.trim() || '';
+      const importance = Number(row.querySelector(".ing-importance")?.value) ?? 2; // 🔥 по умолчанию 2
 
       if (name && qty) {
         recipe.ingredients.push({
           ingredientId: name,
           quantity: isNaN(parseFloat(qty)) ? qty : parseFloat(qty),
-          unit
+          unit,
+          importance  // 🔥 добавляем поле importance
         });
       }
     });
