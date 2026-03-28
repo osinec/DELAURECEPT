@@ -136,7 +136,6 @@
       align-items: center;
     }
 
-    /* 🔥 ИЗМЕНЕНО: добавлен столбец для importance */
     .ingredient-row { grid-template-columns: 2fr 1fr 100px 140px 44px; }
     .step-row       { grid-template-columns: 1fr 44px; }
 
@@ -157,13 +156,16 @@
     .global-actions {
       text-align: center;
       margin: 48px 0 40px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
     }
 
     button.big {
       font-size: 1.2rem;
       padding: 16px 40px;
       border-radius: 12px;
-      margin: 0 16px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.25s;
@@ -190,6 +192,21 @@
       transform: translateY(-2px);
     }
 
+    #copy-btn {
+      background: #b8d4f5;
+      color: #2a4365;
+    }
+
+    #copy-btn:hover {
+      background: #a5c4e8;
+      transform: translateY(-2px);
+    }
+
+    #copy-btn.copied {
+      background: #a8d5ba !important;
+      color: #2d5a3f !important;
+    }
+
     #output {
       background: #2d1e12;
       color: #f5e9d8;
@@ -211,7 +228,6 @@
       font-size: 1.1rem;
     }
 
-    /* Легенда важности */
     .importance-legend {
       display: flex;
       gap: 20px;
@@ -219,6 +235,14 @@
       margin: 16px 0;
       font-size: 0.9rem;
       color: var(--text-light);
+    }
+    
+    .copy-hint {
+      text-align: center;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      margin-top: 8px;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -229,7 +253,6 @@
     <h1>Мои рецепты</h1>
     <p class="subtitle">Уютный генератор JSON для твоих любимых блюд 🍳✨</p>
     
-    <!-- 🔥 Легенда важности ингредиентов -->
     <div class="importance-legend">
       <span>✅ Обязательный</span>
       <span>⭐ Желательный</span>
@@ -242,14 +265,16 @@
   <div class="global-actions">
     <button id="add-recipe-btn" class="big" onclick="addRecipe()">+ Новый рецепт</button>
     <button id="generate-btn" class="big" onclick="generateJSON()">Создать JSON</button>
+    <button id="copy-btn" class="big" onclick="copyJSON()">📋 Копировать</button>
   </div>
+  <div class="copy-hint">Нажмите «Копировать», чтобы сохранить JSON в буфер обмена</div>
 
   <pre id="output" class="empty-state">Здесь появится красивый JSON с твоими рецептами…</pre>
 </div>
 
 <script>
 // =============================================
-//  Утилита для генерации slug
+// Утилита для генерации slug
 // =============================================
 function slugify(text) {
   if (!text) return '';
@@ -260,6 +285,42 @@ function slugify(text) {
     .replace(/[^а-яёa-z0-9_]/g, '')
     .replace(/_+/g, '_')
     .replace(/^_+|_+$/g, '');
+}
+
+// =============================================
+// 🔥 НОВЫЙ: Форматирование JSON в компактном стиле
+// =============================================
+function formatRecipeJSON(data) {
+  const isArray = Array.isArray(data);
+  const recipes = isArray ? data : [data];
+  
+  const formatted = recipes.map(recipe => {
+    // Форматируем ингредиенты — каждый в одну строку
+    const ingredients = recipe.ingredients.map(ing => {
+      const qty = typeof ing.quantity === 'number' ? ing.quantity : JSON.stringify(ing.quantity);
+      return `    { "ingredientId": ${JSON.stringify(ing.ingredientId)}, "quantity": ${qty}, "unit": ${JSON.stringify(ing.unit)}, "importance": ${ing.importance} }`;
+    }).join(',\n');
+    
+    // Форматируем шаги
+    const steps = recipe.steps.map(step => `    ${JSON.stringify(step)}`).join(',\n');
+    
+    return `  {
+    "id": ${JSON.stringify(recipe.id)},
+    "title": ${JSON.stringify(recipe.title)},
+    "photo": ${JSON.stringify(recipe.photo)},
+    "servings": ${recipe.servings},
+    "time": ${JSON.stringify(recipe.time)},
+    "calories": ${recipe.calories},
+    "ingredients": [
+${ingredients}
+    ],
+    "steps": [
+${steps}
+    ]
+  }`;
+  }).join(',\n');
+  
+  return isArray ? `[\n${formatted}\n]` : formatted;
 }
 
 let recipeCounter = 0;
@@ -323,7 +384,7 @@ function createRecipeBlock() {
   };
 
   titleInput.addEventListener("input", updateSlugAndPhoto);
-  updateSlugAndPhoto(); // на случай предзаполнения
+  updateSlugAndPhoto();
 
   // Добавляем хотя бы по одному полю
   addIngredient(blockId);
@@ -339,7 +400,6 @@ function removeRecipe(blockId) {
   if (block) block.remove();
 }
 
-// 🔥 ИЗМЕНЕНА: добавлен select для importance
 function addIngredient(blockId) {
   const container = document.querySelector(`#${blockId} .ingredients-rows`);
   if (!container) return;
@@ -357,7 +417,6 @@ function addIngredient(blockId) {
       <option value="по вкусу">по вкусу</option>
       <option value="">—</option>
     </select>
-    <!-- 🔥 НОВОЕ: выбор важности -->
     <select class="ing-importance">
       <option value="2">✅ Обязательный</option>
       <option value="1">⭐ Желательный</option>
@@ -396,19 +455,18 @@ function generateJSON() {
 
     const recipe = { id, title, photo, servings, time, calories, ingredients: [], steps: [] };
 
-    // 🔥 ИЗМЕНЕНО: читаем importance и добавляем в JSON
     block.querySelectorAll(".ingredient-row").forEach(row => {
       const name = row.querySelector(".ing-name")?.value?.trim();
       const qty  = row.querySelector(".ing-qty")?.value?.trim();
       const unit = row.querySelector(".ing-unit")?.value?.trim() || '';
-      const importance = Number(row.querySelector(".ing-importance")?.value) ?? 2; // 🔥 по умолчанию 2
+      const importance = Number(row.querySelector(".ing-importance")?.value) ?? 2;
 
       if (name && qty) {
         recipe.ingredients.push({
           ingredientId: name,
           quantity: isNaN(parseFloat(qty)) ? qty : parseFloat(qty),
           unit,
-          importance  // 🔥 добавляем поле importance
+          importance
         });
       }
     });
@@ -429,9 +487,40 @@ function generateJSON() {
     return;
   }
 
-  const jsonStr = JSON.stringify(recipes.length === 1 ? recipes[0] : recipes, null, 2);
+  // 🔥 ИСПОЛЬЗУЕМ НОВЫЙ ФОРМАТТЕР
+  const jsonStr = formatRecipeJSON(recipes.length === 1 ? recipes[0] : recipes);
   output.textContent = jsonStr;
   output.className = "";
+}
+
+// =============================================
+// 🔥 НОВЫЙ: Копирование JSON в буфер обмена
+// =============================================
+function copyJSON() {
+  const output = document.getElementById("output");
+  const text = output.textContent;
+  
+  if (!text || output.classList.contains("empty-state")) {
+    alert("Сначала создайте JSON, нажав «Создать JSON»!");
+    return;
+  }
+  
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById("copy-btn");
+    const originalText = btn.textContent;
+    
+    // Визуальная обратная связь
+    btn.textContent = "✓ Скопировано!";
+    btn.classList.add("copied");
+    
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.classList.remove("copied");
+    }, 2000);
+  }).catch(err => {
+    console.error("Ошибка копирования:", err);
+    alert("Не удалось скопировать в буфер обмена. Попробуйте выделить текст и скопировать вручную (Ctrl+C).");
+  });
 }
 
 // Первый рецепт при загрузке
