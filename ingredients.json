@@ -322,6 +322,7 @@
     { "id": "вафли", "name": "Вафли", "unit": "г", "roundUp": true, "allergens": ["gluten", "milk", "eggs"] },
     { "id": "крекер", "name": "Крекер", "unit": "г", "roundUp": false, "allergens": ["gluten"] },
     { "id": "чипсы", "name": "Чипсы", "unit": "г", "roundUp": false, "allergens": [] },
-    { "id": "попкорн", "name": "Попкорн", "unit": "г", "roundUp": false, "allergens": [] }
+    { "id": "попкорн", "name": "Попкорн", "unit": "г", "roundUp": false, "allergens": [] },
+    { "id": "мексиканская_смесь", "name": "Мексиканская смесь", "unit": "г", "roundUp": false, "allergens": [] }
   ]
 }
