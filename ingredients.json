@@ -33,6 +33,7 @@
     { "id": "курица_голень", "name": "Куриная голень", "unit": "г", "roundUp": true, "allergens": [] },
     { "id": "курица_печень", "name": "Куриная печень", "unit": "г", "roundUp": false, "allergens": [] },
     { "id": "курица_сердце", "name": "Куриные сердца", "unit": "г", "roundUp": false, "allergens": [] },
+     { "id": "курица_тушка", "name": "Курица (тушка)", "unit": "г", "roundUp": false, "allergens": [] },
     { "id": "индейка", "name": "Индейка филе", "unit": "г", "roundUp": false, "allergens": [] },
     { "id": "говядина", "name": "Говядина", "unit": "г", "roundUp": false, "allergens": [] },
     { "id": "говядина_фарш", "name": "Говяжий фарш", "unit": "г", "roundUp": false, "allergens": [] },
