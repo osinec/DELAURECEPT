@@ -53,6 +53,7 @@
             box-shadow: var(--shadow-md);
             border: 1px solid var(--border);
             transition: transform 0.22s ease, box-shadow 0.22s ease;
+            position: relative;
         }
         .recipe-block:hover {
             transform: translateY(-6px);
@@ -115,9 +116,56 @@
             gap: 12px;
             margin-bottom: 12px;
             align-items: center;
+            position: relative;
         }
         .ingredient-row { grid-template-columns: 2fr 1fr 100px 140px 44px; }
         .step-row { grid-template-columns: 1fr 44px; }
+        
+        /* Стили для кастомного автокомплита */
+        .autocomplete-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: var(--shadow-md);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 4px;
+            display: none;
+        }
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+        .autocomplete-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+            transition: background 0.15s;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-item:hover,
+        .autocomplete-item.active {
+            background: rgba(224,122,95,0.1);
+            color: var(--accent-dark);
+        }
+        .autocomplete-item .unit-hint {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            margin-left: 8px;
+            opacity: 0.8;
+        }
+        
         .add-btn {
             background: var(--accent);
             color: white;
@@ -209,6 +257,22 @@
             margin-top: 8px;
             opacity: 0.8;
         }
+        
+        /* Скроллбар для красивого вида */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4c4b8;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c95f45;
+        }
     </style>
 </head>
 <body>
@@ -235,15 +299,13 @@
         <pre id="output" class="empty-state">Здесь появится красивый JSON с твоими рецептами…</pre>
     </div>
 
-    <!-- Единый datalist для всех полей ингредиентов -->
-    <datalist id="global-ingredient-list"></datalist>
-
     <script>
         // =============================================
         // Глобальные переменные
         // =============================================
         let allIngredients = [];
         let recipeCounter = 0;
+        let activeDropdown = null; // Отслеживаем активный дропдаун
 
         // =============================================
         // Загрузка ingredients.json
@@ -255,29 +317,10 @@
                 const data = await response.json();
                 allIngredients = data.ingredients || [];
                 console.log(`Загружено ${allIngredients.length} ингредиентов`);
-                
-                // Заполняем глобальный datalist после загрузки
-                populateGlobalDatalist();
             } catch(err) {
                 console.error('Ошибка загрузки ingredients.json:', err);
                 alert('Не удалось загрузить файл ingredients.json.\n\nУбедись, что файл называется точно "ingredients.json" и лежит в одной папке с этим HTML-файлом.');
             }
-        }
-
-        // =============================================
-        // Заполнение глобального datalist
-        // =============================================
-        function populateGlobalDatalist() {
-            const datalist = document.getElementById('global-ingredient-list');
-            datalist.innerHTML = ''; // Очищаем на всякий случай
-            
-            allIngredients.forEach(ing => {
-                const option = document.createElement('option');
-                option.value = ing.name;
-                option.dataset.id = ing.id;
-                option.dataset.unit = ing.unit;
-                datalist.appendChild(option);
-            });
         }
 
         // =============================================
@@ -397,7 +440,146 @@ ${steps}
         }
 
         // =============================================
-        // Добавление ингредиента с автокомплитом
+        // Кастомный автокомплит для ингредиентов
+        // =============================================
+        function initAutocomplete(inputElement, unitSelect, hiddenIdInput) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'autocomplete-wrapper';
+            
+            // Перемещаем input внутрь wrapper
+            inputElement.parentNode.insertBefore(wrapper, inputElement);
+            wrapper.appendChild(inputElement);
+            
+            // Создаём dropdown
+            const dropdown = document.createElement('div');
+            dropdown.className = 'autocomplete-dropdown';
+            dropdown.id = `dropdown-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            wrapper.appendChild(dropdown);
+            
+            // Функция показа списка
+            function showDropdown(filterText = '') {
+                // Скрываем другие дропдауны
+                if (activeDropdown && activeDropdown !== dropdown) {
+                    activeDropdown.classList.remove('show');
+                }
+                activeDropdown = dropdown;
+                
+                // Фильтруем ингредиенты
+                const filtered = allIngredients.filter(ing => 
+                    ing.name.toLowerCase().includes(filterText.toLowerCase())
+                );
+                
+                // Очищаем и заполняем
+                dropdown.innerHTML = '';
+                
+                if (filtered.length === 0 && filterText) {
+                    const empty = document.createElement('div');
+                    empty.className = 'autocomplete-item';
+                    empty.textContent = 'Ничего не найдено';
+                    empty.style.color = 'var(--text-light)';
+                    empty.style.cursor = 'default';
+                    dropdown.appendChild(empty);
+                } else {
+                    const items = filterText ? filtered : allIngredients;
+                    items.forEach(ing => {
+                        const item = document.createElement('div');
+                        item.className = 'autocomplete-item';
+                        item.innerHTML = `${ing.name}<span class="unit-hint">(${ing.unit})</span>`;
+                        item.dataset.id = ing.id;
+                        item.dataset.name = ing.name;
+                        item.dataset.unit = ing.unit;
+                        
+                        item.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            inputElement.value = ing.name;
+                            hiddenIdInput.value = ing.id;
+                            if (ing.unit && unitSelect) {
+                                unitSelect.value = ing.unit;
+                            }
+                            hideDropdown();
+                            inputElement.focus();
+                        });
+                        
+                        // Hover эффект с клавиатурной навигацией
+                        item.addEventListener('mouseenter', () => {
+                            dropdown.querySelectorAll('.autocomplete-item').forEach(i => i.classList.remove('active'));
+                            item.classList.add('active');
+                        });
+                        
+                        dropdown.appendChild(item);
+                    });
+                }
+                
+                dropdown.classList.add('show');
+            }
+            
+            // Функция скрытия
+            function hideDropdown() {
+                dropdown.classList.remove('show');
+                if (activeDropdown === dropdown) {
+                    activeDropdown = null;
+                }
+            }
+            
+            // Обработчики событий
+            inputElement.addEventListener('focus', () => {
+                showDropdown(inputElement.value);
+            });
+            
+            inputElement.addEventListener('input', () => {
+                showDropdown(inputElement.value);
+            });
+            
+            inputElement.addEventListener('blur', (e) => {
+                // Не скрываем сразу, если клик был по дропдауну
+                setTimeout(() => {
+                    if (!dropdown.contains(document.activeElement) && document.activeElement !== inputElement) {
+                        hideDropdown();
+                    }
+                }, 150);
+            });
+            
+            // Поддержка клавиатуры
+            inputElement.addEventListener('keydown', (e) => {
+                const items = dropdown.querySelectorAll('.autocomplete-item:not([style*="cursor: default"])');
+                const activeItem = dropdown.querySelector('.autocomplete-item.active');
+                let index = Array.from(items).indexOf(activeItem);
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (index < items.length - 1) {
+                        if (activeItem) activeItem.classList.remove('active');
+                        items[index + 1].classList.add('active');
+                        items[index + 1].scrollIntoView({ block: 'nearest' });
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (index > 0) {
+                        if (activeItem) activeItem.classList.remove('active');
+                        items[index - 1].classList.add('active');
+                        items[index - 1].scrollIntoView({ block: 'nearest' });
+                    }
+                } else if (e.key === 'Enter' && activeItem) {
+                    e.preventDefault();
+                    activeItem.click();
+                } else if (e.key === 'Escape') {
+                    hideDropdown();
+                }
+            });
+            
+            // Клик вне компонента закрывает дропдаун
+            document.addEventListener('click', (e) => {
+                if (!wrapper.contains(e.target) && dropdown.classList.contains('show')) {
+                    hideDropdown();
+                }
+            });
+            
+            return { showDropdown, hideDropdown };
+        }
+
+        // =============================================
+        // Добавление ингредиента с кастомным автокомплитом
         // =============================================
         function addIngredient(blockId){
             const container = document.querySelector(`#${blockId} .ingredients-rows`);
@@ -409,7 +591,7 @@ ${steps}
             row.id = rowId;
             
             row.innerHTML = `
-                <input type="text" placeholder="Начните вводить название ингредиента..." class="ing-name" list="global-ingredient-list" required>
+                <input type="text" placeholder="Начните вводить название ингредиента..." class="ing-name" autocomplete="off" required>
                 <input type="text" placeholder="180" class="ing-qty" required>
                 <select class="ing-unit">
                     <option value="г">г</option>
@@ -430,38 +612,14 @@ ${steps}
             
             container.appendChild(row);
             
-            // Обработка выбора ингредиента
+            // Инициализируем кастомный автокомплит
             const nameInput = row.querySelector(".ing-name");
             const unitSelect = row.querySelector(".ing-unit");
             const hiddenId = row.querySelector(".ing-id");
             
-            nameInput.addEventListener("input", function() {
-                // Ищем опцию в глобальном datalist по значению
-                const datalist = document.getElementById('global-ingredient-list');
-                const selectedOption = Array.from(datalist.options).find(opt => opt.value === this.value);
-                
-                if (selectedOption) {
-                    hiddenId.value = selectedOption.dataset.id;
-                    const recommendedUnit = selectedOption.dataset.unit;
-                    if (recommendedUnit) {
-                        unitSelect.value = recommendedUnit;
-                    }
-                }
-            });
-            
-            // Также обрабатываем событие change для надёжности (когда пользователь кликает по подсказке)
-            nameInput.addEventListener("change", function() {
-                const datalist = document.getElementById('global-ingredient-list');
-                const selectedOption = Array.from(datalist.options).find(opt => opt.value === this.value);
-                
-                if (selectedOption) {
-                    hiddenId.value = selectedOption.dataset.id;
-                    const recommendedUnit = selectedOption.dataset.unit;
-                    if (recommendedUnit) {
-                        unitSelect.value = recommendedUnit;
-                    }
-                }
-            });
+            if (allIngredients.length > 0) {
+                initAutocomplete(nameInput, unitSelect, hiddenId);
+            }
         }
 
         // =============================================
@@ -469,6 +627,9 @@ ${steps}
         // =============================================
         function removeIngredientRow(button) {
             const row = button.parentElement;
+            // Закрываем дропдаун если он открыт в этой строке
+            const dropdown = row.querySelector('.autocomplete-dropdown');
+            if (dropdown) dropdown.classList.remove('show');
             row.remove();
         }
 
@@ -493,7 +654,11 @@ ${steps}
         // =============================================
         function removeRecipe(blockId){
             const block = document.getElementById(blockId);
-            if (block) block.remove();
+            if (block) {
+                // Закрываем все дропдауны в блоке
+                block.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('show'));
+                block.remove();
+            }
         }
 
         function addRecipe(){
@@ -597,6 +762,18 @@ ${steps}
                 alert("Не удалось скопировать. Выделите текст и нажмите Ctrl+C.");
             });
         }
+
+        // =============================================
+        // Закрытие всех дропдаунов при клике вне
+        // =============================================
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                document.querySelectorAll('.autocomplete-dropdown').forEach(d => {
+                    d.classList.remove('show');
+                });
+                activeDropdown = null;
+            }
+        });
 
         // =============================================
         // Инициализация
