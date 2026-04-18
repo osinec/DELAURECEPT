@@ -226,6 +226,8 @@
     
     { "id": "масло_растительное", "name": "Масло растительное", "unit": "мл", "roundUp": false, "allergens": [] },
     { "id": "масло_оливковое", "name": "Масло оливковое", "unit": "мл", "roundUp": false, "allergens": [] },
+    { "id": "оливки", "name": "Оливки", "unit": "г", "roundUp": false, "allergens": [] },
+    { "id": "Маслины", "name": "Маслины", "unit": "г", "roundUp": false, "allergens": [] },
     { "id": "масло_подсолнечное", "name": "Масло подсолнечное", "unit": "мл", "roundUp": false, "allergens": [] },
     { "id": "масло_кукурузное", "name": "Масло кукурузное", "unit": "мл", "roundUp": false, "allergens": [] },
     { "id": "масло_льняное", "name": "Масло льняное", "unit": "мл", "roundUp": false, "allergens": [] },
